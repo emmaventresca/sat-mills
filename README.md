@@ -27,9 +27,11 @@ distribution (1,925 items) and lead with Desmos methods rather than hand algebra
 
 ## ⚠️ Read this about security
 
-This site has **no real accounts**. Both passwords are checked *in the browser*, and
-the student password is visible to anyone who views the page source. The Supabase
-`anon` key is public by design, and the table policies allow anonymous read and write.
+This site has **no real accounts**. Both passwords are checked *in the browser*.
+They are stored as SHA-256 hashes rather than plain text, so browsing this repo does
+not hand someone the password — but that is obfuscation, not security. Anyone who
+reads `assets/app.js` can see how the check works and bypass it. The Supabase `anon`
+key is public by design, and the table policies allow anonymous read and write.
 
 That is a deliberate trade for a private practice site for one student. **Do not put
 anything sensitive in this project**, and do not reuse the passwords anywhere else.
@@ -59,14 +61,15 @@ In Supabase: **Project Settings → Data API**. Copy:
 - **Project URL** → looks like `https://abcdefgh.supabase.co`
 - **anon public** key → a long string starting `eyJ...`
 
-Open [`assets/config.js`](assets/config.js) and paste both in. While you are there,
-change `TEACHER_PASSWORD` to something she will not guess.
+Open [`assets/config.js`](assets/config.js) and paste both in.
 
-```js
-SUPABASE_URL:      "https://abcdefgh.supabase.co",
-SUPABASE_ANON_KEY: "eyJhbGciOi...",
-TEACHER_PASSWORD:  "something-only-you-know",
+To change either password, generate a hash and paste it over the existing one:
+
+```bash
+python3 tools/hash_password.py "my new teacher password"
 ```
+
+Current defaults: student `Mills`, teacher `mills-coach-2026`.
 
 ### 4. Publish to GitHub Pages
 

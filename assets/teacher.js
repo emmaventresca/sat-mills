@@ -3,6 +3,10 @@
 const C = window.CONFIG;
 const $ = s => document.querySelector(s);
 const el = (t,c,h) => { const e=document.createElement(t); if(c)e.className=c; if(h!=null)e.innerHTML=h; return e; };
+async function sha256(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,"0")).join("");
+}
 let sb = null;
 const configured = () => C.SUPABASE_URL && !C.SUPABASE_URL.startsWith("PASTE");
 if (configured() && window.supabase) sb = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY);
@@ -28,8 +32,9 @@ function login(msg) {
     <p class="small muted" style="margin:14px 0 0"><a href="index.html">Back to practice</a></p>`;
   const shell = el("div","center"); shell.appendChild(box);
   $("#app").innerHTML = ""; $("#app").appendChild(shell);
-  const go = () => {
-    if ($("#pw").value.trim() === C.TEACHER_PASSWORD) { sessionStorage.setItem("sat.auth.t","1"); load(); }
+  const go = async () => {
+    const ok = await sha256($("#pw").value.trim()) === C.TEACHER_PASSWORD_SHA256;
+    if (ok) { sessionStorage.setItem("sat.auth.t","1"); load(); }
     else login("Wrong password.");
   };
   $("#go").onclick = go;

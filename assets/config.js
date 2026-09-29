@@ -1,19 +1,22 @@
 // ---------------------------------------------------------------------------
-// CONFIG - edit this file, then commit and push.
+// CONFIG
 // ---------------------------------------------------------------------------
 window.CONFIG = {
-  // Paste these from Supabase: Project Settings -> Data API
+  // Supabase: Project Settings -> Data API.
+  // The anon key is public by design - it ships to every browser. Row-level
+  // security in supabase/schema.sql is what protects the data, not this key.
+  // NEVER put the service_role key here.
   SUPABASE_URL:      "https://eulmcznaolcaydyygxrt.supabase.co",
-  // <-- STILL NEEDED: the "anon public" key from Project Settings -> Data API
-  SUPABASE_ANON_KEY: "PASTE_ANON_PUBLIC_KEY_HERE",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1bG1jem5hb2xjYXlkeXlneHJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2NDM4ODIsImV4cCI6MjEwNjIxOTg4Mn0.jV9Ra58h_Yo__KmKpiG_eUwukWJzQxmI1d6zr_tC0EY",
 
-  // Student login
-  STUDENT_NAME:     "Mills",
-  STUDENT_PASSWORD: "Mills",
+  // Passwords are stored as SHA-256 hashes so the plain text is not sitting in
+  // a public repo. This is obfuscation, not real security: the check still
+  // happens in the browser and anyone determined can bypass it. See README.
+  // Regenerate with:  python3 tools/hash_password.py "new password"
+  STUDENT_NAME:            "Mills",
+  STUDENT_PASSWORD_SHA256: "2a41acacaddf03832450c109644dcb47679a5ce9fe9932ba0186f27896025752", // Mills
+  TEACHER_PASSWORD_SHA256: "2c05d789a55acdb6c7f4640ee5ddad65aeb4e4dfe57e88f48323221e5d3565b3",
 
-  // Teacher login for progress.html - CHANGE THIS to something she will not guess
-  TEACHER_PASSWORD: "ventresca-teach",
-
-  // Cards per practice session (a deck is split into rounds this size)
+  // Cards per practice round
   ROUND_SIZE: 20
 };

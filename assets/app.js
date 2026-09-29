@@ -3,6 +3,10 @@
 const C = window.CONFIG, LS = window.localStorage;
 const $  = s => document.querySelector(s);
 const el = (t, c, h) => { const e=document.createElement(t); if(c)e.className=c; if(h!=null)e.innerHTML=h; return e; };
+async function sha256(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,"0")).join("");
+}
 
 /* ---------- Supabase + offline outbox ---------- */
 let sb = null;
@@ -14,13 +18,26 @@ const OUTBOX = "sat.outbox";
 const readOutbox  = () => { try { return JSON.parse(LS.getItem(OUTBOX)) || []; } catch { return []; } };
 const writeOutbox = q => LS.setItem(OUTBOX, JSON.stringify(q.slice(-500)));
 
+let backoffUntil = 0, flushing = false;
 async function flush() {
-  if (!sb) return;
+  if (!sb || flushing || Date.now() < backoffUntil) return;
   let q = readOutbox();
   if (!q.length) return;
-  const batch = q.slice(0, 50);
-  const { error } = await sb.from("events").insert(batch);
-  if (!error) { writeOutbox(q.slice(batch.length)); if (readOutbox().length) flush(); }
+  flushing = true;
+  try {
+    const batch = q.slice(0, 50);
+    const { error } = await sb.from("events").insert(batch);
+    if (error) {
+      // Table missing, offline, or policy refused. Keep the events and back off
+      // so a long session does not retry on every single card.
+      backoffUntil = Date.now() + 30000;
+      console.warn("practice upload deferred:", error.message);
+    } else {
+      backoffUntil = 0;
+      writeOutbox(q.slice(batch.length));
+      if (readOutbox().length) { flushing = false; return flush(); }
+    }
+  } finally { flushing = false; }
 }
 function log(action, extra = {}) {
   const ev = Object.assign({
@@ -59,10 +76,10 @@ function showLogin(msg) {
     <div class="row" style="margin-top:14px"><button class="btn-primary grow" id="go">Start practising</button></div>
     <p class="small muted" style="margin:14px 0 0">Teacher? <a href="progress.html">Progress dashboard</a></p>`;
   const shell = el("div","center"); shell.appendChild(box); $("#app").appendChild(shell);
-  const submit = () => {
-    if ($("#pw").value.trim() === C.STUDENT_PASSWORD) {
-      sessionStorage.setItem("sat.auth","student"); showDecks();
-    } else showLogin("That password is not right. Try again.");
+  const submit = async () => {
+    const ok = await sha256($("#pw").value.trim()) === C.STUDENT_PASSWORD_SHA256;
+    if (ok) { sessionStorage.setItem("sat.auth","student"); showDecks(); }
+    else showLogin("That password is not right. Try again.");
   };
   $("#go").onclick = submit;
   $("#pw").onkeydown = e => { if (e.key === "Enter") submit(); };
