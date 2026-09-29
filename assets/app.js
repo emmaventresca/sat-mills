@@ -257,7 +257,7 @@ function showCardModal({c, deck}) {
   m.innerHTML = `<div class="modal-card">
       <button class="x" id="mx" aria-label="Close">&times;</button>
       <span class="sec">${deck.title}</span>
-      <div class="modal-front">${c.front}</div>
+      <div class="modal-front">${fmt(c.front)}</div>
       <div class="modal-back">${fmt(c.back)}</div>
     </div>`;
   const close = () => { m.remove(); document.removeEventListener("keydown", esc); };
@@ -416,7 +416,7 @@ function renderCard() {
     face.className = "card face back";
     face.innerHTML = `<span class="sec">${c.section}</span>${fmt(c.back)}`;
   } else {
-    face.innerHTML = `<div>${c.front}</div>`;
+    face.innerHTML = `<div class="frontbody">${fmt(c.front)}</div>`;
   }
   face.style.marginTop = "12px";
   w.appendChild(face);
@@ -484,11 +484,10 @@ function move(d) {
   state.i = n; state.flipped = false; renderCard();
 }
 
-/* bold the LABEL: fragments before a colon, and pipe separators become breaks */
+/* Card body formatting lives in mathfmt.js (math, choices, labels). */
 function fmt(s) {
-  return s.split(" | ").map(part =>
-    part.replace(/^([A-Z][A-Za-z' -]{1,26}):/, "<b>$1:</b>")
-  ).join("<br><br>");
+  return window.formatCard ? window.formatCard(s)
+       : s.split(" | ").map(x => x.replace(/^([A-Z][A-Za-z' -]{1,26}):/, "<b>$1:</b>")).join("<br><br>");
 }
 function toggleFlag(c) {
   const p = getProg(state.deck.id);

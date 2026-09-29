@@ -182,3 +182,80 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .modal-back b{color:var(--purple-d)}
 .hitrow{cursor:pointer}
 .hitrow:hover td{background:var(--panel2)}
+
+/* =========================================================================
+   Flashcard typography - Libre Baskerville for anything the student reads
+   ========================================================================= */
+:root{ --serif:"Libre Baskerville", Georgia, "Times New Roman", serif; }
+
+.wrap{max-width:900px}
+
+.face{
+  font-family:var(--serif);
+  min-height:330px;
+  padding:44px 46px;
+  font-size:1.34rem;
+  line-height:1.62;
+  font-weight:400;
+  letter-spacing:0;
+  border-radius:20px;
+}
+.face .frontbody{width:100%}
+.face.back{
+  font-size:1.06rem;
+  line-height:1.78;
+  padding:38px 44px;
+  /* keep the block left-aligned but centred vertically, so a short vocabulary
+     definition does not float at the top of a tall card */
+  display:flex;flex-direction:column;justify-content:center;align-items:stretch;
+}
+.face.back > *{width:100%}
+.face .sec{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:.66rem;letter-spacing:.14em;margin-bottom:20px;
+}
+/* the " | " separators become real paragraph breaks */
+.sep{height:0;margin:14px 0;border-top:1px solid transparent}
+.face.back .sep{border-top-color:var(--line);margin:16px 0 15px}
+.modal-back .sep{border-top:1px solid var(--line);margin:15px 0 14px;height:0}
+b.lbl{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--purple-d);display:inline-block;margin-right:7px;
+}
+
+/* multiple-choice options, one per line */
+ul.choices{
+  list-style:none;margin:16px 0 2px;padding:0;
+  display:flex;flex-direction:column;gap:9px;
+}
+ul.choices li{
+  display:flex;gap:12px;align-items:flex-start;
+  background:var(--panel2);border:1px solid var(--line);
+  border-radius:12px;padding:11px 15px;
+  font-size:.97em;line-height:1.5;text-align:left;
+}
+ul.choices li b{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  color:var(--purple-d);font-weight:800;min-width:1.1em;flex:none;
+}
+ul.choices li span{flex:1}
+
+/* math */
+.mth{font-size:1.02em;white-space:nowrap}
+.katex{font-size:1.06em}
+.face.back .katex, .modal-back .katex{font-size:1.1em}
+code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:.92em;background:var(--panel2);border:1px solid var(--line);
+  border-radius:6px;padding:1px 5px;
+}
+.modal-card{max-width:720px;padding:30px 34px}
+.modal-front{font-family:var(--serif);font-size:1.2rem;line-height:1.55;margin-bottom:18px}
+.modal-back{font-family:var(--serif);font-size:1.02rem;line-height:1.78;padding-top:18px}
+
+@media(max-width:620px){
+  .face{min-height:260px;font-size:1.14rem;padding:30px 24px}
+  .face.back{font-size:1rem;padding:26px 22px}
+  ul.choices li{padding:10px 12px;font-size:.94em}
+}
