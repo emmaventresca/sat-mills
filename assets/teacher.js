@@ -29,7 +29,8 @@ function login(msg) {
     <label for="pw">Teacher password</label>
     <input id="pw" type="password" autofocus>
     <div class="row" style="margin-top:14px"><button class="btn-primary grow" id="go">View progress</button></div>
-    <p class="small muted" style="margin:14px 0 0"><a href="index.html">Back to practice</a></p>`;
+    <p class="small muted" style="margin:14px 0 0"><a href="index.html">Back to practice</a></p>
+    <p class="small muted" style="margin:6px 0 0">Demoing to someone? <a href="index.html?demo=1">Open the student view</a> - no password, nothing saved.</p>`;
   const shell = el("div","center"); shell.appendChild(box);
   $("#app").innerHTML = ""; $("#app").appendChild(shell);
   const go = async () => {

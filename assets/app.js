@@ -121,7 +121,8 @@ function showLogin(msg) {
     <label for="pw">Password</label>
     <input id="pw" type="password" autocomplete="current-password" autofocus>
     <div class="row" style="margin-top:14px"><button class="btn-primary grow" id="go">Start practicing</button></div>
-    <p class="small muted" style="margin:14px 0 0">Teacher? <a href="progress.html">Progress dashboard</a></p>`;
+    <p class="small muted" style="margin:14px 0 0">Teacher? <a href="progress.html">Progress dashboard</a></p>
+    <p class="small muted" style="margin:6px 0 0">Just looking? <a href="index.html?demo=1">Open the demo</a> - no password, nothing saved.</p>`;
   const shell = el("div","center"); shell.appendChild(box); $("#app").appendChild(shell);
   const submit = async () => {
     const ok = await sha256($("#pw").value.trim()) === C.STUDENT_PASSWORD_SHA256;
@@ -172,6 +173,7 @@ async function showDecks(note) {
     <div class="row" style="margin-top:12px;align-items:center">
       <button id="shuf">${LS.getItem(NS + "shuffle")==="1" ? "Shuffle: ON" : "Shuffle: OFF"}</button>
       <span class="muted small grow">Shuffling mixes up card order so you learn the cards, not the sequence.</span>
+      <button id="reset" class="small">${DEMO ? "Reset demo" : "Reset my progress"}</button>
     </div>`;
   w.appendChild(tools);
   if (DEMO) w.appendChild(el("div","ok",
@@ -205,6 +207,14 @@ async function showDecks(note) {
   $("#shuf").onclick = () => {
     LS.setItem(NS + "shuffle", LS.getItem(NS + "shuffle")==="1" ? "0" : "1");
     showDecks();
+  };
+  $("#reset").onclick = () => {
+    const msg = DEMO
+      ? "Reset the demo back to its sample progress?"
+      : "Clear all of your progress on this device? Streak, boxes, flags and history will be wiped. This cannot be undone.";
+    if (!confirm(msg)) return;
+    Object.keys(LS).filter(k => k.startsWith(NS)).forEach(k => LS.removeItem(k));
+    location.reload();
   };
   wireSearch();
   renderReview(review);
