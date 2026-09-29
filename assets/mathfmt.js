@@ -14,18 +14,22 @@ const FUNCS = new Set(["sqrt","pi","sin","cos","tan","arcsin","arccos","arctan",
 function looksLikeMath(s) {
   const t = s.trim();
   if (t.length < 2 || t.length > 240) return false;
-  if (!/[\^=]|sqrt\(|\bpi\b|·|≤|≥|±|\d\s*\/\s*\d/.test(t)) return false;
-  if (/[A-Za-z]{3,}/.test(t)) {
-    const words = t.match(/[A-Za-z]{3,}/g) || [];
-    if (words.some(w => !FUNCS.has(w.toLowerCase()) && !WORDY.has(w.toLowerCase()))) return false;
-  }
-  if (!/[0-9]/.test(t) && !/\^/.test(t) && !/sqrt/.test(t) && !/=/.test(t) && !/·/.test(t)) return false;
+
+  // no ordinary prose: only function names and a few words that belong in a formula
+  const words = t.match(/[A-Za-z]{3,}/g) || [];
+  if (words.some(w => !FUNCS.has(w.toLowerCase()) && !WORDY.has(w.toLowerCase()))) return false;
+
+  const operands = t.match(/[A-Za-z0-9]+/g) || [];
+  if (operands.length === 0) return false;                  // a bare ">=" is not an equation
+
+  // it has to carry a real maths signal
+  const strong = /[\^=]|sqrt\(|·|≤|≥|±/.test(t);
+  const slash  = /\//.test(t) && operands.length >= 2;      // a/b, -A/B, 2/3
+  if (!strong && !slash) return false;
+
   // a lone word with a dangling operator ("MEAN =") is a label, not an equation
   if (/^[A-Za-z]+\s*[=+\-*/·]?$/.test(t)) return false;
-  // needs at least two operands unless it carries ^, = or a radical, so the
-  // " · H · " separator in a card title is never mistaken for a product
-  const operands = t.match(/[A-Za-z0-9]+/g) || [];
-  if (operands.length === 0) return false;                       // a bare ">=" is not an equation
+  // one operand is only an equation if it is raised or rooted: s^2 yes, "· H ·" no
   if (operands.length < 2 && !/[\^=]|sqrt/.test(t)) return false;
   return true;
 }
@@ -114,19 +118,39 @@ function mathify(text) {
     while ((m = core.match(/^([A-Za-z]{1,3})\s+/)) && STOP.has(m[1].toLowerCase())) {
       pre += m[0]; core = core.slice(m[0].length);
     }
+    // a leading "=" belongs to the label outside the box: slope = [-A/B]
+    if ((m = core.match(/^=\s*/)))           { pre += m[0]; core = core.slice(m[0].length); }
+    // never leave a bracket unclosed inside a box: drop whole tokens off the
+    // end (or the start) until the parentheses balance
+    const bal = x => (x.match(/\(/g) || []).length - (x.match(/\)/g) || []).length;
+    for (let guard = 0; guard < 8 && bal(core) !== 0 && core.trim(); guard++) {
+      if (bal(core) > 0) {
+        const m4 = core.match(/\s*\S+$/);
+        if (!m4) break;
+        post = m4[0] + post; core = core.slice(0, -m4[0].length);
+      } else {
+        const m5 = core.match(/^\S+\s*/);
+        if (!m5) break;
+        pre += m5[0]; core = core.slice(m5[0].length);
+      }
+    }
     // anything left over on the edges after trimming
-    if ((m = core.match(/^[·'"\s]+/)))       { pre += m[0]; core = core.slice(m[0].length); }
+    if ((m = core.match(/^[·'"\s=]+/)))      { pre += m[0]; core = core.slice(m[0].length); }
     if ((m = core.match(/[.,;:?!'"\s]+$/)))  { post = m[0] + post; core = core.slice(0, -m[0].length); }
 
     if (looksLikeMath(core)) {
       // several statements in one run typeset better as one box per sentence
-      const pieces = core.split(/(?<=[.])\s+(?=[A-Za-z0-9(])/);
+      let pieces = core.split(/(?<=[.])\s+(?=[A-Za-z0-9(])/), glue = " ";
+      if (pieces.length === 1 && core.length > 42 && /,/.test(core)) {
+        const bits = core.split(/,\s*/).filter(Boolean);
+        if (bits.length > 1 && bits.every(b => /[=^]|sqrt|·/.test(b))) { pieces = bits; glue = ", "; }
+      }
       let body;
       if (pieces.length > 1) {
         body = pieces.map(x => {
           const h = katexify(toTeX(x.replace(/\.$/, "")));
           return h ? `<span class="mth">${h}</span>` : x;
-        }).join(" ");
+        }).join(glue);
       } else {
         const h = katexify(toTeX(core));
         body = h ? `<span class="mth">${h}</span>` : `<code>${core}</code>`;
@@ -165,11 +189,25 @@ function splitChoices(html) {
 /* "09 NONLIN-EQ · H · SKIP-OK · 'question'" - the prefix is a label, and its
    middot separators must never be read as multiplication. */
 function stripTitle(t) {
-  const re = /^(\d{2}\s+[A-Z][A-Z0-9-]*|[A-Z](?![a-z])[A-Z0-9-]*)\s*·\s*/;
+  const re = /^(\d{2}\s+[A-Z][A-Z0-9-]*(?:\s+(?:vs|and|or|to|[A-Z][A-Z0-9-]*))*|[A-Z](?![a-z])[A-Z0-9-]*)\s*·\s*/;
   let head = "", m;
   while ((m = t.match(re))) { head += m[0]; t = t.slice(m[0].length); }
   return [head, t];
 }
+
+/* Break "09 NONLIN-EQ · H · SKIP-OK · 'question'" into a badge and the question
+   itself, so the label can be shown as a tag instead of run into the text. */
+const DIFF = {E:"Easy", M:"Medium", H:"Hard", "SKIP-OK":"Skip OK"};
+window.splitCardTitle = function (front) {
+  const [head, rest] = stripTitle(front);
+  if (!head) return null;
+  const bits = head.split("·").map(x => x.trim()).filter(Boolean);
+  const first = (bits.shift() || "").replace(/^\d+\s*/, "");
+  const tags  = bits.map(b => DIFF[b] || b);
+  // drop the quotes wrapping a question, including when options follow it
+  const body = rest.trim().replace(/^'/, "").replace(/'(?=\s*(?:[A-D]\)|$))/, "").trim();
+  return {section:first, tags, body: body || front};
+};
 
 window.formatCard = function (text) {
   return text.split(" | ").map(part => {

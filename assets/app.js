@@ -257,7 +257,7 @@ function showCardModal({c, deck}) {
   m.innerHTML = `<div class="modal-card">
       <button class="x" id="mx" aria-label="Close">&times;</button>
       <span class="sec">${deck.title}</span>
-      <div class="modal-front">${fmt(c.front)}</div>
+      <div class="modal-front">${frontHTML(c.front)}</div>
       <div class="modal-back">${fmt(c.back)}</div>
     </div>`;
   const close = () => { m.remove(); document.removeEventListener("keydown", esc); };
@@ -416,7 +416,7 @@ function renderCard() {
     face.className = "card face back";
     face.innerHTML = `<span class="sec">${c.section}</span>${fmt(c.back)}`;
   } else {
-    face.innerHTML = `<div class="frontbody">${fmt(c.front)}</div>`;
+    face.innerHTML = frontHTML(c.front);
   }
   face.style.marginTop = "12px";
   w.appendChild(face);
@@ -482,6 +482,17 @@ function move(d) {
     return state.mode === "browse" ? showDeckMenu(state.deck.id) : finish();
   }
   state.i = n; state.flipped = false; renderCard();
+}
+
+const DIFFCLASS = {Easy:"d-e", Medium:"d-m", Hard:"d-h", "Skip OK":"d-s"};
+/* Front of a card: the "10 QUAD · E ·" label becomes a badge row above the
+   question rather than running into the sentence. */
+function frontHTML(front) {
+  const t = window.splitCardTitle && window.splitCardTitle(front);
+  if (!t) return `<div class="frontbody">${fmt(front)}</div>`;
+  const tags = t.tags.map(x => `<span class="dtag ${DIFFCLASS[x] || ""}">${x}</span>`).join("");
+  return `<div class="cardtag"><span class="sname">${t.section}</span>${tags}</div>
+          <div class="frontbody">${fmt(t.body)}</div>`;
 }
 
 /* Card body formatting lives in mathfmt.js (math, choices, labels). */
