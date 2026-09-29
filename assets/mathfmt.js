@@ -4,6 +4,8 @@
 (() => {
 const STOP = new Set(["is","as","of","to","in","it","or","if","on","at","by","be","an",
   "we","so","do","no","up","my","me","us","he","the","and","for","are","was","not"]);
+const WORDY = new Set(["angle","base","area","height","width","length","radius",
+  "diameter","old","new","sum","count","total","whole","percent","part","side","theta"]);
 const FUNCS = new Set(["sqrt","pi","sin","cos","tan","arcsin","arccos","arctan",
   "abs","log","ln","mean","median","stdev","total","min","max","quartile","distance","cdot"]);
 
@@ -11,15 +13,19 @@ const FUNCS = new Set(["sqrt","pi","sin","cos","tan","arcsin","arccos","arctan",
    ordinary prose word. That second test is what keeps sentences intact. */
 function looksLikeMath(s) {
   const t = s.trim();
-  if (t.length < 2 || t.length > 80) return false;
+  if (t.length < 2 || t.length > 240) return false;
   if (!/[\^=]|sqrt\(|\bpi\b|·|≤|≥|±|\d\s*\/\s*\d/.test(t)) return false;
   if (/[A-Za-z]{3,}/.test(t)) {
     const words = t.match(/[A-Za-z]{3,}/g) || [];
-    if (words.some(w => !FUNCS.has(w.toLowerCase()))) return false;
+    if (words.some(w => !FUNCS.has(w.toLowerCase()) && !WORDY.has(w.toLowerCase()))) return false;
   }
   if (!/[0-9]/.test(t) && !/\^/.test(t) && !/sqrt/.test(t) && !/=/.test(t) && !/·/.test(t)) return false;
   // a lone word with a dangling operator ("MEAN =") is a label, not an equation
   if (/^[A-Za-z]+\s*[=+\-*/·]?$/.test(t)) return false;
+  // needs at least two operands unless it carries ^, = or a radical, so the
+  // " · H · " separator in a card title is never mistaken for a product
+  const operands = t.match(/[A-Za-z0-9]+/g) || [];
+  if (operands.length < 2 && !/[\^=]|sqrt/.test(t)) return false;
   return true;
 }
 
@@ -45,6 +51,8 @@ function toTeX(s) {
   t = t.replace(/\((\d+)\s*\/\s*(\d+)\)/g, "\\frac{$1}{$2}");
   t = t.replace(/(?<![\\A-Za-z0-9.}])(\d+)\s*\/\s*(\d+)(?![\d.])/g, "\\frac{$1}{$2}");
   t = t.replace(/\*/g, " \\cdot ");
+  WORDY.forEach(w => { t = t.replace(new RegExp("\\b" + w + "\\b", "gi"),
+                                     m => `\\text{${m}}`); });
   t = t.replace(/\s{2,}/g, " ");
   return t;
 }
@@ -58,13 +66,16 @@ function katexify(tex) {
 /* Walk the text in whitespace-separated runs, grouping adjacent math-ish tokens. */
 function mathify(text) {
   const isTok = w => {
-    if (!/^[A-Za-z0-9^().,+\-*/·=<>!≤≥±≈°_]+$/.test(w)) return false;
+    if (!/^['"]*[A-Za-z0-9^().,+\-*/·=<>!≤≥±≈°_]+[?!;:'"]*$/.test(w)) return false;
     if (/^[.,]$/.test(w)) return false;
     const bare = w.replace(/[^A-Za-z]/g, "").toLowerCase();
     // math signal, a lone variable letter, or a known function - never a prose word
     if (/^[+\-*/=<>≤≥±≈·(),]+$/.test(w)) return true;      // bare operator continues a run
     if (/[0-9^=/·*<>≤≥]/.test(w)) return true;        // carries a math signal
     if (FUNCS.has(bare)) return true;
+    // a function call like "sqrt(x)," strips to "sqrtx" - match the leading name
+    const head = (w.match(/[A-Za-z]+/) || [""])[0].toLowerCase();
+    if (FUNCS.has(head)) return true;
     if (/^[A-Za-z]+$/.test(w) && STOP.has(bare)) return false;   // "is", "to", "an"...
     // variable terms: at most two letters once punctuation is stripped, so
     // "bx", "a(x", "r)(x", "s)" keep an equation together while "gives" breaks it
@@ -78,7 +89,7 @@ function mathify(text) {
     const trail = bufRaw.slice(raw.length ? bufRaw.indexOf(raw) + raw.length : 0);
     const lead  = bufRaw.slice(0, bufRaw.indexOf(raw) < 0 ? 0 : bufRaw.indexOf(raw));
     // strip sentence punctuation before testing, restore after
-    const m = raw.match(/^(.*?)([.,;:]?)$/s);
+    const m = raw.match(/^(.*?)([.,;:?!'"]*)$/s);
     let core = m[1], punct = m[2], tail = "";
     const dang = core.match(/\s+x$/);          // trailing "x" is a multiplication sign, not a variable
     if (dang) { core = core.slice(0, -dang[0].length); tail = dang[0]; }
@@ -95,8 +106,15 @@ function mathify(text) {
     }
     punct = tail + punct;
     if (looksLikeMath(core)) {
-      const html = katexify(toTeX(core));
-      out += lead + lead2 + (html ? `<span class="mth">${html}</span>` : `<code>${core}</code>`) + punct + trail;
+      // a run of several statements typesets better as one chip per sentence
+      const pieces = core.split(/(?<=[.])\s+(?=[A-Za-z0-9(])/);
+      const html = pieces.length > 1
+        ? pieces.map(x => { const h = katexify(toTeX(x.replace(/\.$/, "")));
+                            return h ? `<span class="mth">${h}</span>` : x; }).join(" ")
+        : katexify(toTeX(core));
+      const wrapped = !html ? `<code>${core}</code>`
+        : (html.indexOf('<span class="mth">') === 0 ? html : `<span class="mth">${html}</span>`);
+      out += lead + lead2 + wrapped + punct + trail;
     } else out += bufRaw;
     buf = []; bufRaw = "";
   };
