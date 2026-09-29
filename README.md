@@ -89,22 +89,51 @@ Your dashboard is at that link + `/progress.html`.
 
 ## How practice works
 
-- Decks are split into rounds of 20 cards (`ROUND_SIZE` in config).
-- A round serves **unseen cards first**, so she moves through a deck rather than
-  re-seeing the same ones.
-- She flips each card, then marks **Got it** or **Missed it**, and can **Flag** any
-  card to come back to.
-- Keyboard: `space` flips and then marks correct, `1` / `←` missed, `2` / `→` got,
-  `f` flags.
-- At the end of every round she gets a result, a nudge, and four ways to keep going:
-  next 20 new cards, drill the ones she has missed, review her flagged cards, or
-  restart the deck. When a core deck is fully seen, it points her at the advanced one.
+Clicking a deck opens a menu rather than starting immediately:
+
+- **Review N due today** — spaced repetition, the highest-value option (see below)
+- **Practise N new cards** — cards she has never seen
+- **Drill the N you have missed**
+- **Review your N flagged cards**
+- **Re-practise the N you have already seen**
+- **Browse all N cards** — flip through the whole deck freely, nothing graded,
+  nothing hidden
+
+In a round she flips each card and marks **Got it** or **Missed it**, and can
+**Flag** anything to come back to. **Previous / Next** move freely in every mode,
+so nothing disappears the moment it is answered — going back shows what she marked
+and lets her change it.
+
+Keyboard: `space` flips, `1` missed, `2` got, `←` `→` move without grading,
+`f` flags.
+
+### Spaced repetition
+
+Every answered card sits in one of five Leitner boxes. A correct answer promotes it
+and pushes the next review further out (1, 3, 7, then 21 days); a miss drops it
+straight back to box 1 and re-queues it in ten minutes. The deck menu surfaces
+whatever is due, which is the single best use of a short study session.
+
+### Other study aids
+
+- **Daily streak and cards-today counter** on the home screen
+- **Search every card** across all six decks at once
+- **Shuffle toggle** so she learns the cards rather than their order
+- **Where you are weakest** — per-deck accuracy by section, so she can see that (say)
+  Circles is at 40% while Systems is at 90%
+- **Your missed / flagged cards** listed at the bottom of the home screen, with a
+  button to practise them
+- End of round: a result, a nudge, and four ways to keep going
 
 ## What you see on the dashboard
 
 Practice sessions, cards answered, overall accuracy, time on cards, and current flag
 count. Then a per-deck table (rounds, accuracy, last practised), everything she has
-**flagged**, her **most-missed cards** ranked, and a recent-session log.
+**flagged**, her **most-missed cards** ranked, **practice by day** (sessions, cards,
+accuracy and time per day with a bar for relative effort), and a recent-session log.
+
+Per-card time is measured from the card appearing to her marking it, capped at two
+minutes so a session left open overnight does not distort the totals.
 
 Press **Refresh** to re-read. It is a live query, not a cached report.
 

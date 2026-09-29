@@ -58,7 +58,7 @@ async function load() {
 }
 
 function render(ev) {
-  const decks = {}, cards = {}, flags = new Map(), sessions = {};
+  const decks = {}, cards = {}, flags = new Map(), sessions = {}, days = {};
   let answered = 0, got = 0, totalMs = 0;
 
   ev.forEach(e => {
@@ -66,6 +66,11 @@ function render(ev) {
     if (!d.last || e.created_at > d.last) d.last = e.created_at;
     if (e.action === "got" || e.action === "missed") {
       answered++; if (e.action === "got") got++;
+      const day = e.created_at.slice(0,10);
+      const dd = days[day] = days[day] || {n:0, got:0, ms:0, sessions:new Set()};
+      dd.n++; if (e.action === "got") dd.got++;
+      if (e.ms) dd.ms += Math.min(e.ms, 120000);
+      if (e.session_id) dd.sessions.add(e.session_id);
       if (e.ms) totalMs += Math.min(e.ms, 120000);
       d[e.action]++;
       const k = e.card_id || e.card_front;
@@ -148,6 +153,24 @@ function render(ev) {
           <td class="num" style="color:var(--bad)">${c.missed}</td><td class="num">${c.got}</td></tr>`).join("")}</tbody></table>`
     : `<p class="muted">Nothing missed yet.</p>`;
   w.appendChild(mt);
+
+  // practice by day
+  w.appendChild(el("h2",null,"Practice by day"));
+  const dayRows = Object.entries(days).sort((a,b) => b[0].localeCompare(a[0])).slice(0,30);
+  const maxMs = Math.max(1, ...dayRows.map(([,d]) => d.ms));
+  const dt2 = el("div","card");
+  dt2.innerHTML = dayRows.length
+    ? `<table><thead><tr><th>Day</th><th class="num">Sessions</th><th class="num">Cards</th>
+        <th class="num">Accuracy</th><th class="num">Time</th><th style="width:34%"></th></tr></thead><tbody>${
+        dayRows.map(([day,d]) => {
+          const label = new Date(day+"T12:00:00").toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+          return `<tr><td>${label}</td><td class="num">${d.sessions.size}</td><td class="num">${d.n}</td>
+            <td class="num">${Math.round(d.got/d.n*100)}%</td><td class="num">${mins(d.ms)}</td>
+            <td><div class="bar" style="margin:6px 0 0"><i style="width:${Math.round(d.ms/maxMs*100)}%"></i></div></td></tr>`;
+        }).join("")}</tbody></table>
+       <p class="muted small" style="margin:12px 0 0">Time is measured per card, from the card appearing to her marking it, capped at 2 minutes so a session left open does not distort the total.</p>`
+    : `<p class="muted">No practice recorded yet.</p>`;
+  w.appendChild(dt2);
 
   // sessions
   w.appendChild(el("h2",null,"Recent sessions"));
