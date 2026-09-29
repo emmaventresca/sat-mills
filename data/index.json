@@ -1,0 +1,46 @@
+{
+ "decks": [
+  {
+   "id": "vocab-core",
+   "title": "Vocabulary - Core",
+   "description": "303 high-frequency SAT words, 87% attested in College Board's own question bank and published practice tests.",
+   "level": "1000 to 1300",
+   "count": 303
+  },
+  {
+   "id": "vocab-hard",
+   "title": "Vocabulary - Advanced",
+   "description": "Harder words, near-synonym discrimination pairs, and common words used in their uncommon SAT senses.",
+   "level": "1300 to 1450",
+   "count": 197
+  },
+  {
+   "id": "transitions-core",
+   "title": "Transitions - Core",
+   "description": "Every transition College Board uses, grouped by the relationship it signals, each with an example sentence.",
+   "level": "1000 to 1300",
+   "count": 105
+  },
+  {
+   "id": "transitions-hard",
+   "title": "Transitions - Advanced",
+   "description": "Full in-context questions with four options, plus why each distractor fails.",
+   "level": "1300 to 1450",
+   "count": 36
+  },
+  {
+   "id": "math-core",
+   "title": "Math Signals - Core",
+   "description": "170 signal-to-method cards, Desmos first, grouped by question type and ordered easy to hard within each type.",
+   "level": "1000 to 1300",
+   "count": 170
+  },
+  {
+   "id": "math-hard",
+   "title": "Math Signals - Advanced",
+   "description": "Classify-it-yourself questions with no type given, plus the harder content tier: circles, trig, tangency and symbolic work.",
+   "level": "1300 to 1450",
+   "count": 71
+  }
+ ]
+}
