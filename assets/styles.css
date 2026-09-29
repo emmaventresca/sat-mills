@@ -259,3 +259,21 @@ code{
   .face.back{font-size:1rem;padding:26px 22px}
   ul.choices li{padding:10px 12px;font-size:.94em}
 }
+
+/* ---- math set as inline chips so formulas read as units, still in the line ---- */
+.mth{
+  display:inline-block;
+  background:linear-gradient(180deg,#f7f4ff 0%,#f1ecff 100%);
+  border:1px solid #e0d6fb;
+  border-radius:9px;
+  padding:2px 9px 3px;
+  margin:1px 1px;
+  line-height:1.35;
+  vertical-align:-0.18em;
+  white-space:nowrap;
+  box-shadow:0 1px 2px rgba(88,63,182,.06);
+}
+.mth .katex{font-size:1.08em;color:#241c48}
+.face.back .mth, .modal-back .mth{font-size:.99em}
+/* a formula card is mostly chips - give them room to breathe */
+.face.back p, .modal-back p{margin:0}

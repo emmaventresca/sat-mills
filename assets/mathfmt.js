@@ -2,6 +2,8 @@
    lines, and "LABEL:" lead-ins emphasised. The deck sources stay plain text so
    the Quizlet exports remain readable; all of this happens at render time. */
 (() => {
+const STOP = new Set(["is","as","of","to","in","it","or","if","on","at","by","be","an",
+  "we","so","do","no","up","my","me","us","he","the","and","for","are","was","not"]);
 const FUNCS = new Set(["sqrt","pi","sin","cos","tan","arcsin","arccos","arctan",
   "abs","log","ln","mean","median","stdev","total","min","max","quartile","distance","cdot"]);
 
@@ -15,7 +17,9 @@ function looksLikeMath(s) {
     const words = t.match(/[A-Za-z]{3,}/g) || [];
     if (words.some(w => !FUNCS.has(w.toLowerCase()))) return false;
   }
-  if (!/[0-9]/.test(t) && !/\^/.test(t) && !/sqrt/.test(t)) return false;
+  if (!/[0-9]/.test(t) && !/\^/.test(t) && !/sqrt/.test(t) && !/=/.test(t) && !/·/.test(t)) return false;
+  // a lone word with a dangling operator ("MEAN =") is a label, not an equation
+  if (/^[A-Za-z]+\s*[=+\-*/·]?$/.test(t)) return false;
   return true;
 }
 
@@ -59,7 +63,12 @@ function mathify(text) {
     const bare = w.replace(/[^A-Za-z]/g, "").toLowerCase();
     // math signal, a lone variable letter, or a known function - never a prose word
     if (/^[+\-*/=<>≤≥±≈·(),]+$/.test(w)) return true;      // bare operator continues a run
-    return /[0-9^=/·*<>≤≥]/.test(w) || /^[A-Za-z][).,]?$/.test(w) || FUNCS.has(bare);
+    if (/[0-9^=/·*<>≤≥]/.test(w)) return true;        // carries a math signal
+    if (FUNCS.has(bare)) return true;
+    if (/^[A-Za-z]+$/.test(w) && STOP.has(bare)) return false;   // "is", "to", "an"...
+    // variable terms: at most two letters once punctuation is stripped, so
+    // "bx", "a(x", "r)(x", "s)" keep an equation together while "gives" breaks it
+    return bare.length > 0 && bare.length <= 2;
   };
   const parts = text.split(/(\s+)/);
   let out = "", buf = [], bufRaw = "";
@@ -73,10 +82,21 @@ function mathify(text) {
     let core = m[1], punct = m[2], tail = "";
     const dang = core.match(/\s+x$/);          // trailing "x" is a multiplication sign, not a variable
     if (dang) { core = core.slice(0, -dang[0].length); tail = dang[0]; }
+    let lead2 = "";
+    for (;;) {                                  // ...and short prose words at either end
+      const m2 = core.match(/\s+([A-Za-z]{1,3})$/);
+      if (m2 && STOP.has(m2[1].toLowerCase())) { tail = m2[0] + tail; core = core.slice(0, -m2[0].length); }
+      else break;
+    }
+    for (;;) {
+      const m3 = core.match(/^([A-Za-z]{1,3})\s+/);
+      if (m3 && STOP.has(m3[1].toLowerCase())) { lead2 += m3[0]; core = core.slice(m3[0].length); }
+      else break;
+    }
     punct = tail + punct;
     if (looksLikeMath(core)) {
       const html = katexify(toTeX(core));
-      out += lead + (html ? `<span class="mth">${html}</span>` : `<code>${core}</code>`) + punct + trail;
+      out += lead + lead2 + (html ? `<span class="mth">${html}</span>` : `<code>${core}</code>`) + punct + trail;
     } else out += bufRaw;
     buf = []; bufRaw = "";
   };
