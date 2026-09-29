@@ -15,7 +15,7 @@ window.CONFIG = {
   // Regenerate with:  python3 tools/hash_password.py "new password"
   STUDENT_NAME:            "Mills",
   STUDENT_PASSWORD_SHA256: "2a41acacaddf03832450c109644dcb47679a5ce9fe9932ba0186f27896025752", // Mills
-  TEACHER_PASSWORD_SHA256: "2c05d789a55acdb6c7f4640ee5ddad65aeb4e4dfe57e88f48323221e5d3565b3",
+  TEACHER_PASSWORD_SHA256: "29b22914af8e9cdadf78fafa8223fd1e021d1602a56def2dbc5b893676f214f5",
 
   // Cards per practice round
   ROUND_SIZE: 20

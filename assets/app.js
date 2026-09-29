@@ -1,6 +1,12 @@
 /* SAT practice - student app */
 (() => {
 const C = window.CONFIG, LS = window.localStorage;
+
+/* Demo mode: reached from the teacher dashboard as index.html?demo=1.
+   It never writes to Supabase and keeps its own progress namespace, so
+   demonstrating the app to someone cannot touch her real data or stats. */
+const DEMO = new URLSearchParams(location.search).has("demo");
+const NS = DEMO ? "sat.demo." : "sat.";
 const $  = s => document.querySelector(s);
 const el = (t, c, h) => { const e=document.createElement(t); if(c)e.className=c; if(h!=null)e.innerHTML=h; return e; };
 async function sha256(str) {
@@ -40,6 +46,7 @@ async function flush() {
   } finally { flushing = false; }
 }
 function log(action, extra = {}) {
+  if (DEMO) return;            // demo practice is never recorded
   const ev = Object.assign({
     student: C.STUDENT_NAME, session_id: state.sessionId,
     deck_id: state.deck ? state.deck.id : "-", action
@@ -51,7 +58,7 @@ window.addEventListener("online", flush);
 setInterval(flush, 20000);
 
 /* ---------- local progress ---------- */
-const pkey = id => "sat.progress." + id;
+const pkey = id => NS + "progress." + id;
 function getProg(id) {
   try { return JSON.parse(LS.getItem(pkey(id))) || {seen:{}, flagged:[], rounds:0}; }
   catch { return {seen:{}, flagged:[], rounds:0}; }
@@ -77,12 +84,12 @@ function dueCount(deck, p) {
 /* ---------- daily streak ---------- */
 const today = () => new Date().toISOString().slice(0,10);
 function bumpDay() {
-  let d = {}; try { d = JSON.parse(LS.getItem("sat.days")) || {}; } catch {}
+  let d = {}; try { d = JSON.parse(LS.getItem(NS + "days")) || {}; } catch {}
   d[today()] = (d[today()] || 0) + 1;
-  LS.setItem("sat.days", JSON.stringify(d));
+  LS.setItem(NS + "days", JSON.stringify(d));
 }
 function streak() {
-  let d = {}; try { d = JSON.parse(LS.getItem("sat.days")) || {}; } catch {}
+  let d = {}; try { d = JSON.parse(LS.getItem(NS + "days")) || {}; } catch {}
   let n = 0, t = new Date();
   if (!d[today()]) t.setDate(t.getDate() - 1);      // yesterday still counts
   for (;;) {
@@ -163,10 +170,14 @@ async function showDecks(note) {
     <input id="q" type="text" placeholder="e.g. tangent, however, discriminant">
     <div id="qres"></div>
     <div class="row" style="margin-top:12px;align-items:center">
-      <button id="shuf">${LS.getItem("sat.shuffle")==="1" ? "Shuffle: ON" : "Shuffle: OFF"}</button>
+      <button id="shuf">${LS.getItem(NS + "shuffle")==="1" ? "Shuffle: ON" : "Shuffle: OFF"}</button>
       <span class="muted small grow">Shuffling mixes up card order so you learn the cards, not the sequence.</span>
     </div>`;
   w.appendChild(tools);
+  if (DEMO) w.appendChild(el("div","ok",
+    `<b>Demo mode.</b> This is exactly what Mills sees, with sample progress filled in.
+     Nothing here is saved and none of it reaches her real data.
+     <a href="progress.html">Back to the dashboard</a>`));
   if (note) w.appendChild(el("div","ok",note));
   if (!configured()) w.appendChild(el("div","err",
     "<b>Progress is only saving on this device.</b> Supabase is not configured yet, so nothing is reaching the teacher dashboard. Practice still works and results are queued locally, and they will upload once the keys are added."));
@@ -192,7 +203,7 @@ async function showDecks(note) {
   $("#app").innerHTML = ""; $("#app").appendChild(w);
   $("#out").onclick = () => { sessionStorage.removeItem("sat.auth"); showLogin(); };
   $("#shuf").onclick = () => {
-    LS.setItem("sat.shuffle", LS.getItem("sat.shuffle")==="1" ? "0" : "1");
+    LS.setItem(NS + "shuffle", LS.getItem(NS + "shuffle")==="1" ? "0" : "1");
     showDecks();
   };
   wireSearch();
@@ -330,7 +341,7 @@ async function startDeck(id, mode = "all") {
   if (mode === "new")     pool = pool.filter(c => !p.seen[c.id]);
   if (!pool.length) { showDecks("Nothing left in that group - nice work. Pick a deck to keep going."); return; }
 
-  if (LS.getItem("sat.shuffle") === "1" && mode !== "browse") {
+  if (LS.getItem(NS + "shuffle") === "1" && mode !== "browse") {
     pool = pool.slice();
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -546,10 +557,41 @@ document.addEventListener("keydown", e => {
   if (e.key.toLowerCase() === "f") toggleFlag(state.queue[state.i]);
 });
 
+/* Fill a demo with believable history so the screens are not all zeros. */
+async function seedDemo() {
+  if (LS.getItem(NS + "seeded")) return;
+  const decks = await Promise.all(state.decks.map(d => loadDeck(d.id)));
+  let rng = 20260929;
+  const rand = () => (rng = (rng * 1103515245 + 12345) % 2147483648) / 2147483648;
+  decks.forEach((deck, di) => {
+    const share = [0.55, 0.30, 0.40, 0.10, 0.45, 0.08][di] || 0.2;
+    const p = {seen:{}, flagged:[], rounds: Math.round(share * 9)};
+    deck.cards.forEach((c, i) => {
+      if (i / deck.cards.length > share) return;
+      const hard = rand() < 0.28;
+      const rec = {got: hard ? 1 : 1 + Math.floor(rand() * 2), missed: hard ? 1 + Math.floor(rand() * 2) : 0};
+      rec.box = hard ? 1 : 2 + Math.floor(rand() * 3);
+      rec.due = Date.now() + (rand() < 0.35 ? -DAY : BOX_DAYS[rec.box] * DAY);
+      p.seen[c.id] = rec;
+      if (rand() < 0.035) p.flagged.push(c.id);
+    });
+    setProg(deck.id, p);
+  });
+  const days = {};
+  for (let i = 0; i < 9; i++) {
+    if (i === 3 || i === 7) continue;                 // a couple of days off
+    const d = new Date(); d.setDate(d.getDate() - i);
+    days[d.toISOString().slice(0,10)] = 12 + Math.floor(rand() * 34);
+  }
+  LS.setItem(NS + "days", JSON.stringify(days));
+  LS.setItem(NS + "seeded", "1");
+}
+
 /* ---------- boot ---------- */
 (async () => {
   flush();
-  if (sessionStorage.getItem("sat.auth") === "student") { await loadIndex(); showDecks(); }
+  if (DEMO) { await loadIndex(); await seedDemo(); showDecks(); }
+  else if (sessionStorage.getItem("sat.auth") === "student") { await loadIndex(); showDecks(); }
   else showLogin();
 })();
 })();
