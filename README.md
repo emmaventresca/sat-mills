@@ -92,10 +92,10 @@ Your dashboard is at that link + `/progress.html`.
 Clicking a deck opens a menu rather than starting immediately:
 
 - **Review N due today** — spaced repetition, the highest-value option (see below)
-- **Practise N new cards** — cards she has never seen
+- **Practice N new cards** — cards she has never seen
 - **Drill the N you have missed**
 - **Review your N flagged cards**
-- **Re-practise the N you have already seen**
+- **Re-practice the N you have already seen**
 - **Browse all N cards** — flip through the whole deck freely, nothing graded,
   nothing hidden
 
@@ -122,13 +122,13 @@ whatever is due, which is the single best use of a short study session.
 - **Where you are weakest** — per-deck accuracy by section, so she can see that (say)
   Circles is at 40% while Systems is at 90%
 - **Your missed / flagged cards** listed at the bottom of the home screen, with a
-  button to practise them
+  button to practice them
 - End of round: a result, a nudge, and four ways to keep going
 
 ## What you see on the dashboard
 
 Practice sessions, cards answered, overall accuracy, time on cards, and current flag
-count. Then a per-deck table (rounds, accuracy, last practised), everything she has
+count. Then a per-deck table (rounds, accuracy, last practiced), everything she has
 **flagged**, her **most-missed cards** ranked, **practice by day** (sessions, cards,
 accuracy and time per day with a bar for relative effort), and a recent-session log.
 
@@ -137,7 +137,7 @@ minutes so a session left open overnight does not distort the totals.
 
 Press **Refresh** to re-read. It is a live query, not a cached report.
 
-## Offline behaviour
+## Offline behavior
 
 Events queue in `localStorage` if she is offline or Supabase is unreachable, and
 upload on the next successful connection. Nothing is lost if the wifi drops

@@ -100,11 +100,11 @@ function render(ev) {
   const w = el("div","wrap");
   w.appendChild(el("div","topbar",
     `<div><h1>${esc(C.STUDENT_NAME)}'s progress</h1>
-      <p class="muted small" style="margin:0">${last ? "Last practised " + ago(last) : "No practice recorded yet"}</p></div>
+      <p class="muted small" style="margin:0">${last ? "Last practiced " + ago(last) : "No practice recorded yet"}</p></div>
      <div class="row"><button id="rl">Refresh</button><button id="out">Log out</button></div>`));
 
   if (!ev.length) {
-    w.appendChild(el("div","card","<p>Nothing yet. Once she practises, it will appear here automatically.</p>"));
+    w.appendChild(el("div","card","<p>Nothing yet. Once she practices, it will appear here automatically.</p>"));
     $("#app").innerHTML=""; $("#app").appendChild(w);
     $("#rl").onclick = load; $("#out").onclick = () => { sessionStorage.removeItem("sat.auth.t"); login(); };
     return;
@@ -123,7 +123,7 @@ function render(ev) {
   w.appendChild(el("h2",null,"By deck"));
   const dt = el("div","card");
   dt.innerHTML = `<table><thead><tr><th>Deck</th><th class="num">Rounds</th><th class="num">Answered</th>
-    <th class="num">Accuracy</th><th class="num">Last practised</th></tr></thead><tbody>${
+    <th class="num">Accuracy</th><th class="num">Last practiced</th></tr></thead><tbody>${
     Object.entries(decks).filter(([,d]) => d.got + d.missed > 0)
       .sort((a,b) => (b[1].got+b[1].missed) - (a[1].got+a[1].missed))
       .map(([id,d]) => {

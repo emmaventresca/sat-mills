@@ -113,7 +113,7 @@ function showLogin(msg) {
     ${msg ? `<div class="err">${msg}</div>` : ""}
     <label for="pw">Password</label>
     <input id="pw" type="password" autocomplete="current-password" autofocus>
-    <div class="row" style="margin-top:14px"><button class="btn-primary grow" id="go">Start practising</button></div>
+    <div class="row" style="margin-top:14px"><button class="btn-primary grow" id="go">Start practicing</button></div>
     <p class="small muted" style="margin:14px 0 0">Teacher? <a href="progress.html">Progress dashboard</a></p>`;
   const shell = el("div","center"); shell.appendChild(box); $("#app").appendChild(shell);
   const submit = async () => {
@@ -182,7 +182,7 @@ async function showDecks(note) {
       b.innerHTML = `<div class="t">${d.title}<span class="badge ${level==="1000 to 1300"?"core":"adv"}">${d.count} cards</span></div>
         <div class="d">${d.description}</div>
         <div class="bar"><i style="width:${pct}%"></i></div>
-        <div class="d" style="margin-top:7px">${seen ? `${seen} seen - ${pct}% - practised ${p.rounds} time${p.rounds===1?"":"s"}` : "Not started"}${p.flagged.length?` - <span style="color:var(--flag)">${p.flagged.length} flagged</span>`:""}</div>`;
+        <div class="d" style="margin-top:7px">${seen ? `${seen} seen - ${pct}% - practiced ${p.rounds} time${p.rounds===1?"":"s"}` : "Not started"}${p.flagged.length?` - <span style="color:var(--flag)">${p.flagged.length} flagged</span>`:""}</div>`;
       b.onclick = () => showDeckMenu(d.id);
       w.appendChild(b);
     });
@@ -252,7 +252,7 @@ async function renderReview(root) {
     const byDeck = [...new Set(items.map(x => x.deck.id))];
     const row = el("div","row"); row.style.marginTop = "10px";
     row.innerHTML = byDeck.map(id =>
-      `<button data-deck="${id}" data-mode="${mode}">Practise these in ${state.decks.find(d=>d.id===id).title}</button>`).join("");
+      `<button data-deck="${id}" data-mode="${mode}">Practice these in ${state.decks.find(d=>d.id===id).title}</button>`).join("");
     root.appendChild(row);
     row.querySelectorAll("button").forEach(b =>
       b.onclick = () => startDeck(b.dataset.deck, b.dataset.mode));
@@ -283,10 +283,10 @@ async function showDeckMenu(id) {
   const due = dueCount(deck, p);
   let h = "";
   if (due) h += `<button class="btn-primary deck" id="m-due">Review ${due} card${due===1?"":"s"} due today <span style="opacity:.85">- spaced repetition, the highest-value practice</span></button>`;
-  if (newLeft) h += `<button class="${due?"":"btn-primary "}deck" id="m-new">Practise ${Math.min(newLeft, C.ROUND_SIZE)} new cards <span style="opacity:.85">- ${newLeft} not yet seen</span></button>`;
+  if (newLeft) h += `<button class="${due?"":"btn-primary "}deck" id="m-new">Practice ${Math.min(newLeft, C.ROUND_SIZE)} new cards <span style="opacity:.85">- ${newLeft} not yet seen</span></button>`;
   if (missed)  h += `<button class="deck" id="m-missed">Drill the ${missed} you have missed</button>`;
   if (flagged) h += `<button class="deck" id="m-flag">Review your ${flagged} flagged card${flagged===1?"":"s"}</button>`;
-  if (seen)    h += `<button class="deck" id="m-seen">Re-practise the ${seen} you have already seen</button>`;
+  if (seen)    h += `<button class="deck" id="m-seen">Re-practice the ${seen} you have already seen</button>`;
   h += `<button class="deck" id="m-browse"><b>Browse all ${deck.count} cards</b> <span class="muted">- flip through freely, nothing is graded and nothing disappears</span></button>`;
   box.innerHTML = h;
   w.appendChild(box);
@@ -506,7 +506,7 @@ function finish() {
     <div class="grid" style="margin-top:16px">
       <div class="stat"><b>${acc}%</b><span>this round</span></div>
       <div class="stat"><b>${pct}%</b><span>of deck seen</span></div>
-      <div class="stat"><b>${p.rounds}</b><span>rounds practised</span></div>
+      <div class="stat"><b>${p.rounds}</b><span>rounds practiced</span></div>
     </div>`;
   w.appendChild(box);
 
@@ -517,7 +517,7 @@ function finish() {
   if (flaggedLeft)  opts += `<button class="deck" id="rf">Review your ${flaggedLeft} flagged card${flaggedLeft===1?"":"s"}</button>`;
   if (!newLeft && advanced && advanced.id !== d.id)
                     opts += `<button class="deck" id="adv">You have seen every card here - try <b>${advanced.title}</b></button>`;
-  opts += `<button class="deck" id="again">Practise this deck again from the top</button>`;
+  opts += `<button class="deck" id="again">Practice this deck again from the top</button>`;
   next.innerHTML = opts;
   w.appendChild(next);
 
