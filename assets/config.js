@@ -3,8 +3,9 @@
 // ---------------------------------------------------------------------------
 window.CONFIG = {
   // Paste these from Supabase: Project Settings -> Data API
-  SUPABASE_URL:      "PASTE_YOUR_PROJECT_URL_HERE",
-  SUPABASE_ANON_KEY: "PASTE_YOUR_ANON_PUBLIC_KEY_HERE",
+  SUPABASE_URL:      "https://eulmcznaolcaydyygxrt.supabase.co",
+  // <-- STILL NEEDED: the "anon public" key from Project Settings -> Data API
+  SUPABASE_ANON_KEY: "PASTE_ANON_PUBLIC_KEY_HERE",
 
   // Student login
   STUDENT_NAME:     "Mills",
