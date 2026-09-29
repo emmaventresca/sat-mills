@@ -25,6 +25,7 @@ function looksLikeMath(s) {
   // needs at least two operands unless it carries ^, = or a radical, so the
   // " · H · " separator in a card title is never mistaken for a product
   const operands = t.match(/[A-Za-z0-9]+/g) || [];
+  if (operands.length === 0) return false;                       // a bare ">=" is not an equation
   if (operands.length < 2 && !/[\^=]|sqrt/.test(t)) return false;
   return true;
 }
@@ -64,6 +65,8 @@ function katexify(tex) {
 }
 
 /* Walk the text in whitespace-separated runs, grouping adjacent math-ish tokens. */
+const esc = t => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
 function mathify(text) {
   const isTok = w => {
     if (!/^['"]*[A-Za-z0-9^().,+\-*/·=<>!≤≥±≈°_]+[?!;:'"]*$/.test(w)) return false;
@@ -72,56 +75,73 @@ function mathify(text) {
     // math signal, a lone variable letter, or a known function - never a prose word
     if (/^[+\-*/=<>≤≥±≈·(),]+$/.test(w)) return true;      // bare operator continues a run
     if (/[0-9^=/·*<>≤≥]/.test(w)) return true;        // carries a math signal
-    if (FUNCS.has(bare)) return true;
-    // a function call like "sqrt(x)," strips to "sqrtx" - match the leading name
+    // a function name only counts as maths when it is actually a call, so the
+    // English words "total", "mean", "min" and "max" stay prose
     const head = (w.match(/[A-Za-z]+/) || [""])[0].toLowerCase();
-    if (FUNCS.has(head)) return true;
-    if (/^[A-Za-z]+$/.test(w) && STOP.has(bare)) return false;   // "is", "to", "an"...
+    if (FUNCS.has(head) && new RegExp("^['\"(]?" + head + "\\(", "i").test(w)) return true;
+    if (bare === "pi" || bare === "theta") return true;
+    if (STOP.has(bare) && !/[0-9^=/·]/.test(w)) return false;    // "is", "to", "'at"...
     // variable terms: at most two letters once punctuation is stripped, so
     // "bx", "a(x", "r)(x", "s)" keep an equation together while "gives" breaks it
     return bare.length > 0 && bare.length <= 2;
   };
   const parts = text.split(/(\s+)/);
   let out = "", buf = [], bufRaw = "";
+
+  /* Peel a run apart into: whatever belongs to the surrounding prose (leading
+     separators or quotes, trailing punctuation, a dangling multiplication sign,
+     stray short words) and the equation in the middle. Emit the prose parts
+     verbatim on both branches so nothing is duplicated or dropped. */
   const flush = () => {
-    if (!buf.length) return;
-    const raw = bufRaw.replace(/^\s+|\s+$/g, "");
-    const trail = bufRaw.slice(raw.length ? bufRaw.indexOf(raw) + raw.length : 0);
-    const lead  = bufRaw.slice(0, bufRaw.indexOf(raw) < 0 ? 0 : bufRaw.indexOf(raw));
-    // strip sentence punctuation before testing, restore after
-    const m = raw.match(/^(.*?)([.,;:?!'"]*)$/s);
-    let core = m[1], punct = m[2], tail = "";
-    const dang = core.match(/\s+x$/);          // trailing "x" is a multiplication sign, not a variable
-    if (dang) { core = core.slice(0, -dang[0].length); tail = dang[0]; }
-    let lead2 = "";
-    for (;;) {                                  // ...and short prose words at either end
-      const m2 = core.match(/\s+([A-Za-z]{1,3})$/);
-      if (m2 && STOP.has(m2[1].toLowerCase())) { tail = m2[0] + tail; core = core.slice(0, -m2[0].length); }
-      else break;
+    if (!buf.length) { return; }
+    const raw   = bufRaw.trim();
+    const at    = bufRaw.indexOf(raw);
+    const lead  = at > 0 ? bufRaw.slice(0, at) : "";
+    const trail = bufRaw.slice(at + raw.length);
+
+    let core = raw, pre = "", post = "";
+    let m;
+    // leading title separators and opening quotes are prose
+    if ((m = core.match(/^[·'"\s]+/)))      { pre  = m[0]; core = core.slice(m[0].length); }
+    // trailing sentence punctuation and closing quotes are prose
+    if ((m = core.match(/[.,;:?!'"]+$/)))    { post = m[0] + post; core = core.slice(0, -m[0].length); }
+    // a dangling multiplication sign belongs to the words after it
+    if ((m = core.match(/\s+x$/)))           { post = m[0] + post; core = core.slice(0, -m[0].length); }
+    // short English words swept in at either end
+    while ((m = core.match(/\s+([A-Za-z]{1,3})$/)) && STOP.has(m[1].toLowerCase())) {
+      post = m[0] + post; core = core.slice(0, -m[0].length);
     }
-    for (;;) {
-      const m3 = core.match(/^([A-Za-z]{1,3})\s+/);
-      if (m3 && STOP.has(m3[1].toLowerCase())) { lead2 += m3[0]; core = core.slice(m3[0].length); }
-      else break;
+    while ((m = core.match(/^([A-Za-z]{1,3})\s+/)) && STOP.has(m[1].toLowerCase())) {
+      pre += m[0]; core = core.slice(m[0].length);
     }
-    punct = tail + punct;
+    // anything left over on the edges after trimming
+    if ((m = core.match(/^[·'"\s]+/)))       { pre += m[0]; core = core.slice(m[0].length); }
+    if ((m = core.match(/[.,;:?!'"\s]+$/)))  { post = m[0] + post; core = core.slice(0, -m[0].length); }
+
     if (looksLikeMath(core)) {
-      // a run of several statements typesets better as one chip per sentence
+      // several statements in one run typeset better as one box per sentence
       const pieces = core.split(/(?<=[.])\s+(?=[A-Za-z0-9(])/);
-      const html = pieces.length > 1
-        ? pieces.map(x => { const h = katexify(toTeX(x.replace(/\.$/, "")));
-                            return h ? `<span class="mth">${h}</span>` : x; }).join(" ")
-        : katexify(toTeX(core));
-      const wrapped = !html ? `<code>${core}</code>`
-        : (html.indexOf('<span class="mth">') === 0 ? html : `<span class="mth">${html}</span>`);
-      out += lead + lead2 + wrapped + punct + trail;
-    } else out += bufRaw;
+      let body;
+      if (pieces.length > 1) {
+        body = pieces.map(x => {
+          const h = katexify(toTeX(x.replace(/\.$/, "")));
+          return h ? `<span class="mth">${h}</span>` : x;
+        }).join(" ");
+      } else {
+        const h = katexify(toTeX(core));
+        body = h ? `<span class="mth">${h}</span>` : `<code>${core}</code>`;
+      }
+      out += esc(lead + pre) + body + esc(post + trail);
+    } else {
+      out += esc(bufRaw);
+    }
     buf = []; bufRaw = "";
   };
+
   for (const p of parts) {
     if (/^\s+$/.test(p)) { if (buf.length) bufRaw += p; else out += p; continue; }
     if (isTok(p)) { buf.push(p); bufRaw += p; }
-    else { flush(); out += p; }
+    else { flush(); out += esc(p); }
   }
   flush();
   return out;
@@ -142,9 +162,19 @@ function splitChoices(html) {
 }
 
 /* Public: format one side of a card. */
+/* "09 NONLIN-EQ · H · SKIP-OK · 'question'" - the prefix is a label, and its
+   middot separators must never be read as multiplication. */
+function stripTitle(t) {
+  const re = /^(\d{2}\s+[A-Z][A-Z0-9-]*|[A-Z](?![a-z])[A-Z0-9-]*)\s*·\s*/;
+  let head = "", m;
+  while ((m = t.match(re))) { head += m[0]; t = t.slice(m[0].length); }
+  return [head, t];
+}
+
 window.formatCard = function (text) {
   return text.split(" | ").map(part => {
-    let p = mathify(part);
+    const [head, rest] = stripTitle(part);
+    let p = head + mathify(rest);
     p = p.replace(/^([A-Z][A-Za-z' -]{1,26}):/, '<b class="lbl">$1:</b>');
     return splitChoices(p);
   }).join('<div class="sep"></div>');
