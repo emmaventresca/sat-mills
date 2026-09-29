@@ -238,12 +238,34 @@ async function wireSearch() {
     decks.forEach(deck => deck.cards.forEach(c => {
       if ((c.front + " " + c.back).toLowerCase().includes(q)) hits.push({c, deck});
     }));
-    out.innerHTML = hits.length
-      ? `<table style="margin-top:12px"><tbody>${hits.slice(0,25).map(h =>
-          `<tr><td>${h.c.front}</td><td style="width:1%"><span class="tag">${h.deck.title.replace(" - "," ")}</span></td></tr>`
-        ).join("")}</tbody></table>${hits.length>25?`<p class="muted small">${hits.length} matches, showing 25.</p>`:""}`
+    const shown = hits.slice(0,25);
+    out.innerHTML = shown.length
+      ? `<table style="margin-top:12px"><tbody>${shown.map((h,i) =>
+          `<tr class="hitrow" data-i="${i}"><td>${h.c.front}</td>
+            <td style="width:1%"><span class="tag">${h.deck.title.replace(" - "," ")}</span></td></tr>`
+        ).join("")}</tbody></table>
+        <p class="muted small" style="margin:10px 0 0">${hits.length>25?`${hits.length} matches, showing 25. `:""}Click any card to read it.</p>`
       : `<p class="muted small" style="margin-top:12px">No cards match that.</p>`;
+    out.querySelectorAll(".hitrow").forEach(tr =>
+      tr.onclick = () => showCardModal(shown[tr.dataset.i]));
   };
+}
+
+/* Peek at a single card without leaving the search results behind it. */
+function showCardModal({c, deck}) {
+  const m = el("div","modal");
+  m.innerHTML = `<div class="modal-card">
+      <button class="x" id="mx" aria-label="Close">&times;</button>
+      <span class="sec">${deck.title}</span>
+      <div class="modal-front">${c.front}</div>
+      <div class="modal-back">${fmt(c.back)}</div>
+    </div>`;
+  const close = () => { m.remove(); document.removeEventListener("keydown", esc); };
+  const esc = e => { if (e.key === "Escape") close(); };
+  m.onclick = e => { if (e.target === m) close(); };   // click the backdrop
+  document.body.appendChild(m);
+  m.querySelector("#mx").onclick = close;
+  document.addEventListener("keydown", esc);
 }
 
 /* Your missed / flagged cards, across every deck. */

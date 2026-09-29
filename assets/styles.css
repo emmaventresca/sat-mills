@@ -157,3 +157,28 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
   h1{font-size:1.4rem}
   .wrap{padding:20px 14px 60px}
 }
+
+/* ---- card preview modal (from search results) ---- */
+.modal{
+  position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:18px;
+  background:rgba(47,39,80,.42);backdrop-filter:blur(3px);
+}
+.modal-card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow-lg);max-width:640px;width:100%;max-height:82vh;overflow:auto;
+  padding:24px 26px;position:relative;
+}
+.modal-card .x{
+  position:absolute;top:12px;right:12px;width:34px;height:34px;padding:0;
+  border-radius:50%;font-size:1.15rem;line-height:1;font-weight:700;
+}
+.modal-front{
+  font-size:1.14rem;font-weight:700;letter-spacing:-.01em;line-height:1.45;
+  padding-right:38px;margin-bottom:14px;
+}
+.modal-back{
+  font-size:.98rem;line-height:1.72;border-top:1px solid var(--line);padding-top:16px;
+}
+.modal-back b{color:var(--purple-d)}
+.hitrow{cursor:pointer}
+.hitrow:hover td{background:var(--panel2)}

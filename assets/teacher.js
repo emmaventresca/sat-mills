@@ -102,7 +102,10 @@ function render(ev) {
   w.appendChild(el("div","topbar",
     `<div><h1>${esc(C.STUDENT_NAME)}'s progress</h1>
       <p class="muted small" style="margin:0">${last ? "Last practiced " + ago(last) : "No practice recorded yet"}</p></div>
-     <div class="row"><button id="demo" class="btn-primary">Student view</button><button id="rl">Refresh</button><button id="out">Log out</button></div>`));
+     <div class="row">
+       <a id="demo" class="btn-primary" style="text-decoration:none;display:inline-block;padding:11px 17px;border-radius:13px;font-weight:700"
+          href="index.html?demo=1" target="_blank" rel="noopener">Student view</a>
+       <button id="rl">Refresh</button><button id="out">Log out</button></div>`));
 
   if (!ev.length) {
     w.appendChild(el("div","card","<p>Nothing yet. Once she practices, it will appear here automatically.</p>"));
@@ -183,7 +186,6 @@ function render(ev) {
 
   $("#app").innerHTML = ""; $("#app").appendChild(w);
   $("#rl").onclick = load;
-  $("#demo").onclick = () => location.href = "index.html?demo=1";
   $("#out").onclick = () => { sessionStorage.removeItem("sat.auth.t"); login(); };
 }
 
