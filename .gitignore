@@ -3,3 +3,6 @@ node_modules/
 *.log
 .claude/
 tools/raw/
+
+# Retrieval script: kept locally, not published. See README.
+tools/fetch_question_bank.py
